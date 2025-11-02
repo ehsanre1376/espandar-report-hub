@@ -140,8 +140,16 @@ const Index = () => {
           {activeReport && !isFullscreen && (
             <Breadcrumb
               categoryName={currentCategory?.name}
+              categoryId={activeReport?.categoryId}
               reportName={activeReport?.reportName}
               onBack={handleBack}
+              onHomeClick={handleHomeClick}
+              onCategoryClick={(categoryId) => {
+                setSelectedCategoryId(categoryId);
+                setActiveReport(null);
+                setIsFullscreen(false);
+                setIsHeaderVisible(true);
+              }}
             />
           )}
           
