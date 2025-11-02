@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -16,6 +16,9 @@ const Index = () => {
     reportName: string;
     reportUrl: string;
   } | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollTop = useRef(0);
 
   const handleReportSelect = (categoryId: string, reportId: string, reportName: string) => {
     const category = reportCategories.find(c => c.id === categoryId);
@@ -36,6 +39,8 @@ const Index = () => {
   const handleBack = () => {
     setActiveReport(null);
     setSelectedCategoryId(null);
+    setIsFullscreen(false);
+    setIsHeaderVisible(true);
   };
 
   const handleCategoryClick = (categoryId: string) => {
@@ -47,7 +52,58 @@ const Index = () => {
     setActiveReport(null);
     setSelectedCategoryId(null);
     setIsSidebarOpen(false);
+    setIsFullscreen(false);
+    setIsHeaderVisible(true);
   };
+
+  // Handle F11 key to toggle fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F11" && activeReport) {
+        e.preventDefault();
+        setIsFullscreen(prev => {
+          const newFullscreen = !prev;
+          // When entering fullscreen, hide header; when exiting, show it
+          if (newFullscreen) {
+            setIsHeaderVisible(false);
+          } else {
+            setIsHeaderVisible(true);
+          }
+          return newFullscreen;
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeReport]);
+
+  // Handle scroll to show header at top in fullscreen mode
+  useEffect(() => {
+    if (!isFullscreen || !activeReport) {
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      
+      // Show header when at top of page
+      if (scrollTop <= 50) {
+        setIsHeaderVisible(true);
+      } else if (scrollTop > lastScrollTop.current && scrollTop > 100) {
+        // Scrolling down - hide header
+        setIsHeaderVisible(false);
+      } else if (scrollTop < lastScrollTop.current) {
+        // Scrolling up - show header
+        setIsHeaderVisible(true);
+      }
+
+      lastScrollTop.current = scrollTop;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isFullscreen, activeReport]);
 
   const currentCategory = reportCategories.find(c => c.id === activeReport?.categoryId || c.id === selectedCategoryId);
   const selectedCategory = selectedCategoryId ? reportCategories.find(c => c.id === selectedCategoryId) : null;
@@ -57,28 +113,31 @@ const Index = () => {
       <DashboardHeader 
         onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
         onHomeClick={handleHomeClick}
+        isVisible={isHeaderVisible}
       />
       
-      <div className="flex pt-16 w-full">
-        <Sidebar
-          categories={reportCategories}
-          isOpen={isSidebarOpen}
-          onReportSelect={handleReportSelect}
-          activeReport={activeReport ? {
-            categoryId: activeReport.categoryId,
-            reportId: activeReport.reportId
-          } : undefined}
-        />
+      <div className={`flex w-full transition-all duration-300 ${isFullscreen && !isHeaderVisible ? 'pt-0' : 'pt-16'}`}>
+        {!isFullscreen && (
+          <Sidebar
+            categories={reportCategories}
+            isOpen={isSidebarOpen}
+            onReportSelect={handleReportSelect}
+            activeReport={activeReport ? {
+              categoryId: activeReport.categoryId,
+              reportId: activeReport.reportId
+            } : undefined}
+          />
+        )}
 
-        {isSidebarOpen && (
+        {isSidebarOpen && !isFullscreen && (
           <div
             className="fixed inset-0 bg-black/50 z-30 lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
 
-        <main className="flex-1 flex flex-col min-h-[calc(100vh-4rem)]">
-          {activeReport && (
+        <main className={`flex-1 flex flex-col transition-all duration-300 ${isFullscreen ? 'min-h-screen' : 'min-h-[calc(100vh-4rem)]'}`}>
+          {activeReport && !isFullscreen && (
             <Breadcrumb
               categoryName={currentCategory?.name}
               reportName={activeReport?.reportName}
