@@ -9,8 +9,8 @@ export const WelcomeScreen = ({ onCategoryClick }: WelcomeScreenProps) => {
   return (
     <div className="flex items-center justify-center h-full bg-gradient-to-br from-background to-muted/30">
       <div className="text-center space-y-8 px-6 max-w-4xl">
-        <div className="space-y-3">
-          <h2 className="text-4xl font-bold text-foreground">
+        <div className="space-y-3 animate-fade-in">
+          <h2 className="text-4xl font-bold text-foreground animate-slide-in">
             Welcome to Espandar BI Portal
           </h2>
           <p className="text-lg text-muted-foreground">
@@ -25,7 +25,7 @@ export const WelcomeScreen = ({ onCategoryClick }: WelcomeScreenProps) => {
               <button
                 key={category.id}
                 onClick={() => onCategoryClick(category.id)}
-                className="p-6 bg-card rounded-lg border border-border hover:border-accent hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                className="p-6 bg-card rounded-lg border border-border hover:border-accent hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-105 hover:-translate-y-1 transform"
               >
                 <Icon className="h-8 w-8 text-accent mx-auto mb-2 group-hover:scale-110 transition-transform" />
                 <p className="text-sm font-medium">{category.name}</p>

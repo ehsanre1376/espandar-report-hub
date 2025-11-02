@@ -5,6 +5,7 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { ReportViewer } from "@/components/ReportViewer";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { CategoryReportsView } from "@/components/CategoryReportsView";
+import { PageTransition } from "@/components/PageTransition";
 import { reportCategories } from "@/types/reports";
 
 const Index = () => {
@@ -153,21 +154,23 @@ const Index = () => {
             />
           )}
           
-          <div className="flex-1">
-            {activeReport ? (
-              <ReportViewer
-                reportUrl={activeReport.reportUrl}
-                reportName={activeReport.reportName}
-              />
-            ) : selectedCategory ? (
-              <CategoryReportsView
-                category={selectedCategory}
-                onReportSelect={handleReportSelect}
-                onBack={handleBack}
-              />
-            ) : (
-              <WelcomeScreen onCategoryClick={handleCategoryClick} />
-            )}
+          <div className="flex-1 relative overflow-hidden">
+            <PageTransition key={activeReport ? `report-${activeReport.reportId}` : selectedCategory ? `category-${selectedCategory.id}` : 'home'}>
+              {activeReport ? (
+                <ReportViewer
+                  reportUrl={activeReport.reportUrl}
+                  reportName={activeReport.reportName}
+                />
+              ) : selectedCategory ? (
+                <CategoryReportsView
+                  category={selectedCategory}
+                  onReportSelect={handleReportSelect}
+                  onBack={handleBack}
+                />
+              ) : (
+                <WelcomeScreen onCategoryClick={handleCategoryClick} />
+              )}
+            </PageTransition>
           </div>
         </main>
       </div>

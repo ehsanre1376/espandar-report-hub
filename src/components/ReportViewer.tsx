@@ -16,12 +16,15 @@ export const ReportViewer = ({ reportUrl, reportName }: ReportViewerProps) => {
   }, [reportUrl]);
 
   return (
-    <div className="relative w-full h-full bg-background">
+    <div className="relative w-full h-full bg-background animate-fade-in">
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-          <div className="text-center space-y-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="text-sm text-muted-foreground">Loading {reportName}...</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-background/90 z-10 backdrop-blur-sm">
+          <div className="text-center space-y-4 animate-fade-in">
+            <Loader2 className="h-10 w-10 animate-spin text-accent mx-auto" />
+            <p className="text-sm text-muted-foreground font-medium">Loading {reportName}...</p>
+            <div className="w-32 h-1 bg-muted rounded-full overflow-hidden mx-auto">
+              <div className="h-full bg-accent animate-slide-in w-full"></div>
+            </div>
           </div>
         </div>
       )}
