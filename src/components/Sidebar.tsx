@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, BarChart3, TrendingUp, Users, Package } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReportCategory } from "@/types/reports";
 
@@ -9,13 +10,6 @@ interface SidebarProps {
   onReportSelect: (categoryId: string, reportId: string, reportName: string) => void;
   activeReport?: { categoryId: string; reportId: string };
 }
-
-const categoryIcons: Record<string, any> = {
-  financial: BarChart3,
-  sales: TrendingUp,
-  hr: Users,
-  inventory: Package,
-};
 
 export const Sidebar = ({ categories, isOpen, onReportSelect, activeReport }: SidebarProps) => {
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["financial"]);
@@ -38,7 +32,7 @@ export const Sidebar = ({ categories, isOpen, onReportSelect, activeReport }: Si
     >
       <nav className="p-4 space-y-2">
         {categories.map((category) => {
-          const Icon = categoryIcons[category.id] || BarChart3;
+          const CategoryIcon = (LucideIcons as any)[category.icon] || LucideIcons.BarChart3;
           const isExpanded = expandedCategories.includes(category.id);
 
           return (
@@ -47,7 +41,7 @@ export const Sidebar = ({ categories, isOpen, onReportSelect, activeReport }: Si
                 onClick={() => toggleCategory(category.id)}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-sidebar-foreground hover:bg-sidebar-primary rounded-md transition-colors group"
               >
-                <Icon className="h-5 w-5 flex-shrink-0" />
+                <CategoryIcon className="h-5 w-5 flex-shrink-0" />
                 <span className="flex-1 text-left font-medium">{category.name}</span>
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 transition-transform" />
@@ -62,19 +56,24 @@ export const Sidebar = ({ categories, isOpen, onReportSelect, activeReport }: Si
                     const isActive =
                       activeReport?.categoryId === category.id &&
                       activeReport?.reportId === report.id;
+                    
+                    const ReportIcon = report.icon 
+                      ? (LucideIcons as any)[report.icon] || LucideIcons.FileText
+                      : LucideIcons.FileText;
 
                     return (
                       <button
                         key={report.id}
                         onClick={() => onReportSelect(category.id, report.id, report.name)}
                         className={cn(
-                          "w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200",
+                          "w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 flex items-center gap-2",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
                             : "text-sidebar-foreground/80 hover:bg-sidebar-primary hover:text-sidebar-foreground"
                         )}
                       >
-                        {report.name}
+                        <ReportIcon className="h-4 w-4 flex-shrink-0" />
+                        <span>{report.name}</span>
                       </button>
                     );
                   })}

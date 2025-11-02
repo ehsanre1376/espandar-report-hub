@@ -34,6 +34,17 @@ const Index = () => {
     setActiveReport(null);
   };
 
+  const handleCategoryClick = (categoryId: string) => {
+    const category = reportCategories.find(c => c.id === categoryId);
+    if (category && category.reports.length > 0) {
+      // Expand the category and open sidebar
+      setIsSidebarOpen(true);
+      // Optionally, select the first report in the category
+      const firstReport = category.reports[0];
+      handleReportSelect(categoryId, firstReport.id, firstReport.name);
+    }
+  };
+
   const currentCategory = reportCategories.find(c => c.id === activeReport?.categoryId);
 
   return (
@@ -72,7 +83,7 @@ const Index = () => {
                 reportName={activeReport.reportName}
               />
             ) : (
-              <WelcomeScreen />
+              <WelcomeScreen onCategoryClick={handleCategoryClick} />
             )}
           </div>
         </main>
