@@ -18,9 +18,9 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 20%;
 
-    /* #9F0000 - Dark Red Primary */
-    --primary: 0 100% 31%;
-    --primary-foreground: 0 0% 100%;
+    /* #E6E6E6 - Light Gray Primary */
+    --primary: 0 0% 90%;
+    --primary-foreground: 0 0% 20%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 20%;
@@ -37,24 +37,25 @@ All colors MUST be HSL.
 
     --border: 0 0% 85%;
     --input: 0 0% 85%;
-    --ring: 0 100% 31%;
+    --ring: 0 0% 90%;
 
     --radius: 0.375rem;
 
-    /* Sidebar - Dark Red theme */
-    --sidebar-background: 0 100% 31%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 100% 25%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    /* Sidebar - Light Gray theme */
+    --sidebar-background: 0 0% 90%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 0 0% 85%;
+    --sidebar-primary-foreground: 0 0% 20%;
     --sidebar-accent: 49 100% 43%;
     --sidebar-accent-foreground: 0 0% 15%;
-    --sidebar-border: 0 100% 25%;
-    --sidebar-ring: 0 100% 31%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 90%;
 
     /* Custom tokens for dashboard */
+    /* #9F0000 - Dark Red Header */
     --header-background: 0 100% 31%;
     --header-foreground: 0 0% 100%;
-    --nav-hover: 0 100% 25%;
+    --nav-hover: 0 0% 85%;
     --nav-active: 49 100% 43%;
     
     /* Transitions */
@@ -71,8 +72,8 @@ All colors MUST be HSL.
     --popover: 0 0% 18%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 0 100% 31%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 90%;
+    --primary-foreground: 0 0% 20%;
 
     --secondary: 0 0% 25%;
     --secondary-foreground: 0 0% 95%;
@@ -88,20 +89,21 @@ All colors MUST be HSL.
 
     --border: 0 0% 30%;
     --input: 0 0% 30%;
-    --ring: 0 100% 31%;
+    --ring: 0 0% 90%;
     
-    --sidebar-background: 0 100% 31%;
+    --sidebar-background: 0 0% 90%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 100% 25%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 85%;
+    --sidebar-primary-foreground: 0 0% 95%;
     --sidebar-accent: 49 100% 43%;
     --sidebar-accent-foreground: 0 0% 15%;
-    --sidebar-border: 0 100% 25%;
-    --sidebar-ring: 0 100% 31%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 90%;
 
+    /* #9F0000 - Dark Red Header */
     --header-background: 0 100% 31%;
-    --header-foreground: 0 0% 95%;
-    --nav-hover: 0 100% 25%;
+    --header-foreground: 0 0% 100%;
+    --nav-hover: 0 0% 85%;
     --nav-active: 49 100% 43%;
   }
 }

@@ -46,7 +46,7 @@ export const reportCategories: ReportCategory[] = [
     name: "Financial",
     icon: "BarChart3",
     reports: [
-      { id: "aacc-monthly", name: "AACC Monthly Report", icon: "FileText", url: "http://ecic-bi/Reports/powerbi/Financial/AACC_Monthly_Report?rs:embed=true" },
+      { id: "aacc-monthly", name: "ECIC", icon: "FileText", url: "http://ecic-bi/Reports/powerbi/GMR/ECIC%20Monthly%20Report?rs:embed=true" },
       { id: "cash-flow", name: "Cash Flow Statement", icon: "TrendingUp", url: "http://ecic-bi/Reports/powerbi/Financial/Cash_Flow_Statement?rs:embed=true" },
       { id: "budget-analysis", name: "Budget Analysis", icon: "PieChart", url: "http://ecic-bi/Reports/powerbi/Financial/Budget_Analysis?rs:embed=true" },
       { id: "expense-tracking", name: "Expense Tracking", icon: "DollarSign", url: "http://ecic-bi/Reports/powerbi/Financial/Expense_Tracking?rs:embed=true" },
