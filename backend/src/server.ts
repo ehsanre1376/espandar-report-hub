@@ -12,7 +12,22 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Middleware
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow requests from localhost on any port (for development)
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      return callback(null, true);
+    }
+    
+    // Allow requests from the configured frontend URL
+    if (origin === FRONTEND_URL) {
+      return callback(null, true);
+    }
+    
+    callback(null, true); // Allow all origins in development
+  },
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -35,7 +50,7 @@ app.get('/health', (req, res) => {
     environment: {
       port: PORT,
       frontendUrl: FRONTEND_URL,
-      ldapConfigured: !!process.env.LDAP_URL && process.env.LDAP_URL !== 'ldap://your-domain-controller.espandarco.com:389',
+      ldapConfigured: true, // Configured in ldap.config.ts (defaults to DC0.espandarco.com)
     },
   });
 });

@@ -7,7 +7,12 @@
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "test:ldap": "ts-node src/scripts/test-ldap.ts",
+    "test:ldap:user": "ts-node src/scripts/test-ldap-user.ts",
+    "test:both-dcs": "ts-node src/scripts/test-both-dcs.ts",
+    "test:auth:format": "ts-node src/scripts/test-auth-format.ts",
+    "test:login": "ts-node src/scripts/test-login.ts"
   },
   "keywords": ["authentication", "ldap", "active-directory"],
   "author": "",

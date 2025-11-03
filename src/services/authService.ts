@@ -4,8 +4,8 @@ const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH === "true" || !import.m
 
 // Mock credentials for development (remove in production)
 const MOCK_CREDENTIALS: Record<string, string> = {
-  "e.rezaei@espandarco.com": "Ehsan@1234",
-  // Add more mock users here for development
+  // Add mock users here for development
+  // Example: "user@espandarco.com": "password",
 };
 
 interface LoginResponse {
@@ -28,8 +28,18 @@ export const authService = {
    */
   async login(username: string, password: string): Promise<LoginResponse> {
     // Development mode: Mock authentication
+    console.log("Auth Service Debug:", {
+      USE_MOCK_AUTH,
+      API_BASE_URL,
+      VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+      VITE_USE_MOCK_AUTH: import.meta.env.VITE_USE_MOCK_AUTH,
+    });
+    
     if (USE_MOCK_AUTH) {
-      console.log("Using mock authentication (development mode)");
+      console.log("⚠️ Using mock authentication (development mode)");
+      console.log("💡 To use real AD authentication, create .env file with:");
+      console.log("   VITE_API_BASE_URL=http://localhost:3000/api");
+      console.log("   VITE_USE_MOCK_AUTH=false");
       
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -68,6 +78,7 @@ export const authService = {
 
     // Production mode: Call actual backend API
     try {
+      console.log(`Making request to: ${API_BASE_URL}/auth/login`);
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
@@ -78,6 +89,8 @@ export const authService = {
           password,
         }),
       });
+      
+      console.log(`Response status: ${response.status}`);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -97,18 +110,26 @@ export const authService = {
       };
     } catch (error: any) {
       console.error("Auth service error:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
       
       // If it's a network error (backend not running), suggest mock mode
-      if (error.message?.includes("Failed to fetch") || error.message?.includes("NetworkError")) {
+      if (error.message?.includes("Failed to fetch") || 
+          error.message?.includes("NetworkError") || 
+          error.message?.includes("Network request failed") ||
+          error.name === "TypeError") {
         return {
           success: false,
-          error: `Cannot connect to authentication server. ${USE_MOCK_AUTH ? "" : "Set VITE_USE_MOCK_AUTH=true for development mode."}`,
+          error: `Cannot connect to authentication server at ${API_BASE_URL}/auth/login. Make sure the backend is running on port 3000.`,
         };
       }
       
       return {
         success: false,
-        error: "Network error. Please try again.",
+        error: `Network error: ${error.message || "Unknown error"}. Please try again.`,
       };
     }
   },

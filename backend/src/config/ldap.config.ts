@@ -9,11 +9,12 @@ export const ldapConfig = {
   // LDAP Server URL
   // Format: ldap://your-domain-controller:389
   // Or for secure: ldaps://your-domain-controller:636
-  url: process.env.LDAP_URL || 'ldap://your-domain-controller.espandarco.com:389',
+  // Primary DC: DC0.espandarco.com, Backup: DC1.espandarco.com
+  url: process.env.LDAP_URL || 'ldap://DC1.espandarco.com:389',
   
   // Base DN (Domain Name)
   // Format: dc=espandarco,dc=com
-  // Find this by asking your AD admin or using: dsquery server
+  // Forest: espandarco.com
   baseDN: process.env.LDAP_BASE_DN || 'dc=espandarco,dc=com',
   
   // Optional: Service account for LDAP queries (if required)

@@ -10,31 +10,55 @@ const adService = new ADService();
  * Authenticate user against Active Directory
  */
 router.post('/login', async (req: Request, res: Response) => {
+  const requestId = Date.now().toString(36);
+  const logPrefix = `[Auth Route] [${requestId}] [${new Date().toISOString()}]`;
+  
   try {
     const { username, password } = req.body;
 
+    console.log(`${logPrefix} ========================================`);
+    console.log(`${logPrefix} Login request received`);
+    console.log(`${logPrefix} IP: ${req.ip || req.socket.remoteAddress}`);
+    console.log(`${logPrefix} User-Agent: ${req.get('user-agent') || 'N/A'}`);
+
     // Validate input
     if (!username || !password) {
+      console.log(`${logPrefix} ❌ Missing credentials`);
+      console.log(`${logPrefix} Username provided: ${!!username}`);
+      console.log(`${logPrefix} Password provided: ${!!password}`);
       return res.status(400).json({
         success: false,
         error: 'Username and password are required',
       });
     }
 
-    console.log(`Attempting to authenticate user: ${username}`);
+    // Log username format (without password for security)
+    const usernameLength = username.length;
+    const hasAtSymbol = username.includes('@');
+    console.log(`${logPrefix} Username length: ${usernameLength}`);
+    console.log(`${logPrefix} Username format: ${hasAtSymbol ? 'userPrincipalName (with @)' : 'sAMAccountName (no @)'}`);
+    console.log(`${logPrefix} Username: "${username}"`);
+    console.log(`${logPrefix} Starting authentication...`);
 
     // Authenticate against Active Directory
+    const authStartTime = Date.now();
     const user = await adService.authenticate(username, password);
+    const authDuration = Date.now() - authStartTime;
 
     if (!user) {
-      console.log(`Authentication failed for user: ${username}`);
+      console.log(`${logPrefix} ❌ Authentication FAILED (${authDuration}ms)`);
+      console.log(`${logPrefix} ========================================`);
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials. Please check your username and password.',
       });
     }
 
-    console.log(`Authentication successful for user: ${user.username}`);
+    console.log(`${logPrefix} ✅ Authentication SUCCESS (${authDuration}ms)`);
+    console.log(`${logPrefix} User authenticated: ${user.username}`);
+    console.log(`${logPrefix} Display name: ${user.displayName}`);
+    console.log(`${logPrefix} Email: ${user.email}`);
+    console.log(`${logPrefix} Groups: ${user.groups?.length || 0}`);
 
     // Generate JWT token
     const token = generateToken(user);
@@ -53,8 +77,17 @@ router.post('/login', async (req: Request, res: Response) => {
       },
       // powerBiToken: powerBiToken, // Uncomment when Power BI integration is ready
     });
+    
+    console.log(`${logPrefix} Response sent successfully`);
+    console.log(`${logPrefix} ========================================`);
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error(`${logPrefix} ❌ EXCEPTION in login handler`);
+    console.error(`${logPrefix} Error type: ${error.name || 'Unknown'}`);
+    console.error(`${logPrefix} Error message: ${error.message}`);
+    if (error.stack) {
+      console.error(`${logPrefix} Error stack:`, error.stack);
+    }
+    console.log(`${logPrefix} ========================================`);
     res.status(500).json({
       success: false,
       error: 'Internal server error. Please try again later.',
@@ -95,6 +128,43 @@ router.post('/logout', async (req: Request, res: Response) => {
   // In a stateless JWT system, logout is typically handled client-side
   // by removing the token. You might want to maintain a blacklist here.
   res.json({ success: true, message: 'Logged out successfully' });
+});
+
+/**
+ * GET /api/auth/test-ldap
+ * Test LDAP connection and configuration (for debugging)
+ */
+router.get('/test-ldap', async (req: Request, res: Response) => {
+  try {
+    const { ldapConfig } = await import('../config/ldap.config');
+    
+    res.json({
+      success: true,
+      config: {
+        url: ldapConfig.url,
+        baseDN: ldapConfig.baseDN,
+        timeout: ldapConfig.timeout,
+        connectTimeout: ldapConfig.connectTimeout,
+      },
+      message: 'LDAP configuration loaded. Check server logs for detailed authentication logs.',
+      instructions: [
+        '1. Try logging in with a user account',
+        '2. Check the server console for detailed logs',
+        '3. Look for [LDAP Auth] and [LDAP Search] prefixes',
+        '4. Common issues:',
+        '   - Wrong username format (try with/without @)',
+        '   - UserPrincipalName not set in AD',
+        '   - Account disabled',
+        '   - Password incorrect',
+        '   - Network connectivity issues',
+      ],
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
 /**

@@ -3,8 +3,8 @@
 ## Current Status ✅
 
 Your login page is working with **mock authentication**! You can test it right now with:
-- **Username**: `e.rezaei@espandarco.com`
-- **Password**: `Ehsan@1234`
+- **Username**: `user@espandarco.com` (configure mock credentials in `src/services/authService.ts`)
+- **Password**: (configure mock password in `src/services/authService.ts`)
 
 ## What You Can Do Now
 
@@ -14,9 +14,9 @@ Your login page is working with **mock authentication**! You can test it right n
    npm run dev
    ```
 2. Navigate to the login page (should redirect automatically)
-3. Login with:
-   - Username: `e.rezaei@espandarco.com`
-   - Password: `Ehsan@1234`
+3. Login with your Active Directory credentials:
+   - Username: `your-username@espandarco.com` or just `your-username`
+   - Password: Your AD password
 4. You should be redirected to the dashboard!
 
 ### 2. Test the Application Features
