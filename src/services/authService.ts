@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  `${window.location.protocol}//${window.location.hostname}:3000/api`;
 // Use mock auth by default if API_BASE_URL is not set or explicitly enabled
 const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH === "true" || !import.meta.env.VITE_API_BASE_URL;
 
