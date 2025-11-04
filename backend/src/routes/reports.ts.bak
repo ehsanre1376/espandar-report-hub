@@ -1,0 +1,381 @@
+import { Router, Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { promisify } from 'util';
+import { adminOnly } from '../middleware/adminOnly';
+
+const router = Router();
+const readFileAsync = promisify(fs.readFile);
+const writeFileAsync = promisify(fs.writeFile);
+
+interface Report {
+  id: string;
+  name: string;
+  url: string;
+  icon: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  reports: Report[];
+}
+
+interface Catalog {
+  categories: Category[];
+}
+
+const getCatalogPath = () => path.join(__dirname, '..', 'config', 'reports.config.json');
+
+// Helper function to read and parse the catalog
+const readCatalog = async (): Promise<Catalog> => {
+  try {
+    const catalogPath = getCatalogPath();
+    const data = await readFileAsync(catalogPath, 'utf-8');
+    const catalog = JSON.parse(data);
+    
+    if (!catalog.categories) {
+      catalog.categories = [];
+    }
+    
+    return catalog;
+  } catch (error) {
+    console.error('Error reading catalog:', error);
+    throw new Error('Could not read reports catalog');
+  }
+};
+
+// Helper function to write the catalog
+const writeCatalog = async (catalog: Catalog): Promise<void> => {
+  try {
+    const catalogPath = getCatalogPath();
+    await writeFileAsync(catalogPath, JSON.stringify(catalog, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('Error writing catalog:', error);
+    throw new Error('Could not write reports catalog');
+  }
+};
+
+/**
+ * POST /api/reports/add
+ * Add a new report to the catalog (admin only)
+ */
+router.post('/add', adminOnly, async (req: Request, res: Response) => {
+  try {
+    const { categoryId, newCategory, reportName, reportId, reportUrl, reportIcon } = req.body;
+
+    if (!reportName || !reportId || !reportUrl) {
+      return res.status(400).json({ error: 'Missing required report fields' });
+    }
+
+    const catalogPath = path.join(__dirname, '..', 'config', 'reports.config.json');
+
+    fs.readFile(catalogPath, 'utf-8', (err, data) => {
+      if (err) {
+        console.error('Error reading reports catalog:', err);
+        return res.status(500).json({ error: 'Could not load reports catalog' });
+      }
+
+      try {
+        const catalog = JSON.parse(data);
+        if (!catalog.categories) {
+          catalog.categories = [];
+        }
+
+        let targetCategory;
+
+        if (categoryId === 'new') {
+          if (!newCategory) {
+            return res.status(400).json({ error: 'New category name is required' });
+          }
+          const newCategoryId = newCategory.toLowerCase().replace(/\s+/g, '-');
+          targetCategory = {
+            id: newCategoryId,
+            name: newCategory,
+            icon: 'Folder',
+            reports: [],
+          };
+          catalog.categories.push(targetCategory);
+        } else {
+          targetCategory = catalog.categories.find((cat: any) => cat.id === categoryId);
+          if (!targetCategory) {
+            return res.status(400).json({ error: 'Invalid category' });
+          }
+        }
+
+        const newReport = {
+          id: reportId,
+          name: reportName,
+          url: reportUrl,
+          icon: reportIcon || 'FileText',
+        };
+
+        targetCategory.reports.push(newReport);
+
+        fs.writeFile(catalogPath, JSON.stringify(catalog, null, 2), 'utf-8', (writeErr) => {
+          if (writeErr) {
+            console.error('Error writing reports catalog:', writeErr);
+            return res.status(500).json({ error: 'Could not save reports catalog' });
+          }
+          res.status(201).json({ message: 'Report added successfully' });
+        });
+      } catch (parseErr) {
+        console.error('Error parsing reports catalog JSON:', parseErr);
+        res.status(500).json({ error: 'Invalid reports catalog format' });
+      }
+    });
+  } catch (error) {
+    console.error('Error in add report route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * DELETE /api/reports/:categoryId/:reportId
+ * Delete a report from a category (admin only)
+ */
+router.delete('/:categoryId/:reportId', adminOnly, (req: Request, res: Response) => {
+  const { categoryId, reportId } = req.params;
+  const catalogPath = path.join(__dirname, '..', 'config', 'reports.config.json');
+
+  fs.readFile(catalogPath, 'utf-8', (err, data) => {
+    if (err) {
+      return res.status(500).json({ error: 'Could not read reports catalog' });
+    }
+    try {
+      let catalog = JSON.parse(data);
+      if (!catalog.categories) {
+        return res.status(404).json({ error: 'No categories found' });
+      }
+      const categoryIndex = catalog.categories.findIndex((cat: any) => cat.id === categoryId);
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+      const reportIndex = catalog.categories[categoryIndex].reports.findIndex((rep: any) => rep.id === reportId);
+      if (reportIndex === -1) {
+        return res.status(404).json({ error: 'Report not found' });
+      }
+      catalog.categories[categoryIndex].reports.splice(reportIndex, 1);
+
+      fs.writeFile(catalogPath, JSON.stringify(catalog, null, 2), 'utf-8', (writeErr) => {
+        if (writeErr) {
+          return res.status(500).json({ error: 'Could not save reports catalog' });
+        }
+        res.json({ message: 'Report deleted successfully' });
+      });
+    } catch (parseErr) {
+      res.status(500).json({ error: 'Invalid reports catalog format' });
+    }
+  });
+});
+
+/**
+ * DELETE /api/reports/:categoryId
+ * Delete a category (admin only)
+ */
+router.delete('/:categoryId', adminOnly, (req: Request, res: Response) => {
+  const { categoryId } = req.params;
+  const catalogPath = path.join(__dirname, '..', 'config', 'reports.config.json');
+
+  fs.readFile(catalogPath, 'utf-8', (err, data) => {
+    if (err) {
+      return res.status(500).json({ error: 'Could not read reports catalog' });
+    }
+    try {
+      let catalog = JSON.parse(data);
+      if (!catalog.categories) {
+        return res.status(404).json({ error: 'No categories found' });
+      }
+      const categoryIndex = catalog.categories.findIndex((cat: any) => cat.id === categoryId);
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+      catalog.categories.splice(categoryIndex, 1);
+
+      fs.writeFile(catalogPath, JSON.stringify(catalog, null, 2), 'utf-8', (writeErr) => {
+        if (writeErr) {
+          return res.status(500).json({ error: 'Could not save reports catalog' });
+        }
+        res.json({ message: 'Category deleted successfully' });
+      });
+    } catch (parseErr) {
+      res.status(500).json({ error: 'Invalid reports catalog format' });
+    }
+  });
+});
+
+
+/**
+ * POST /api/reports/check-permission
+ * Check if user has permission to access a specific report
+ */
+router.post('/check-permission', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const { reportUrl } = req.body;
+
+    if (!reportUrl) {
+      return res.status(400).json({ error: 'Report URL is required' });
+    }
+
+    // TODO: Implement actual permission check against BI server
+    // For now, we'll do a basic HEAD request to check if the report is accessible
+    // In production, you should check against your BI server's permission system
+    
+    try {
+      const { status, accessible } = await checkUrlAccess(reportUrl, 5000);
+
+      res.json({
+        hasPermission: accessible,
+        status,
+        message: accessible 
+          ? 'Report is accessible' 
+          : `Report access denied (status: ${status})`,
+      });
+    } catch (error: any) {
+      console.error('Error checking report permission:', error);
+      
+      // Default to true for graceful degradation (you can change this to false for stricter security)
+      res.json({
+        hasPermission: true,
+        status: 'error',
+        message: 'Could not verify permission, allowing access',
+      });
+    }
+  } catch (error: any) {
+    console.error('Error in check-permission route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/reports/check-permissions
+ * Check permissions for multiple reports in batch
+ */
+router.post('/check-permissions', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const { reports } = req.body;
+
+    if (!Array.isArray(reports)) {
+      return res.status(400).json({ error: 'Reports array is required' });
+    }
+
+    // Check permissions for all reports
+    const permissions = await Promise.all(
+      reports.map(async (report: { id: string; url: string }) => {
+        try {
+          const { status, accessible } = await checkUrlAccess(report.url, 5000);
+
+          return {
+            reportId: report.id,
+            reportUrl: report.url,
+            hasPermission: accessible,
+            status,
+          };
+        } catch (error: any) {
+          console.error(`Error checking permission for report ${report.id}:`, error);
+          // Default to true for graceful degradation
+          return {
+            reportId: report.id,
+            reportUrl: report.url,
+            hasPermission: true,
+            status: 'error',
+          };
+        }
+      })
+    );
+
+    res.json({ permissions });
+  } catch (error: any) {
+    console.error('Error in check-permissions route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/reports/allowed
+ * Return allowed report IDs for the current user from JWT claims or recompute.
+ */
+router.get('/allowed', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token) as any;
+    if (!decoded) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    let allowedReportIds: string[] | undefined = decoded.allowedReportIds;
+    if (!Array.isArray(allowedReportIds)) {
+      // Recompute if not present in token
+      allowedReportIds = permissionService.getAllowedReportIds({
+        username: decoded.username,
+        email: decoded.email,
+        displayName: decoded.displayName,
+        groups: decoded.groups || [],
+      });
+    }
+
+    res.json({ allowedReportIds });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/reports/catalog
+ * Serve the catalog (categories/reports) from a JSON file so non-devs can edit it.
+ */
+router.get('/catalog', async (req: Request, res: Response) => {
+  try {
+    const catalogPath = path.join(__dirname, '..', 'config', 'reports.config.json');
+    fs.readFile(catalogPath, 'utf-8', (err, data) => {
+      if (err) {
+        console.error('Error reading reports catalog:', err);
+        return res.status(500).json({ error: 'Could not load reports catalog' });
+      }
+      try {
+        const json = JSON.parse(data);
+        res.json(json);
+      } catch (parseErr) {
+        console.error('Error parsing reports catalog JSON:', parseErr);
+        res.status(500).json({ error: 'Invalid reports catalog format' });
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;
+
