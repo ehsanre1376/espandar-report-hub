@@ -11,7 +11,7 @@ export const WelcomeScreen = ({ onCategoryClick }: WelcomeScreenProps) => {
       <div className="text-center space-y-8 px-6 max-w-4xl">
         <div className="space-y-3 animate-fade-in">
           <h2 className="text-4xl font-bold text-foreground animate-slide-in">
-            Welcome to Espandar BI Portal
+            Welcome to Espandar GMRi BI Portal
           </h2>
           <p className="text-lg text-muted-foreground">
             Select a category below or use the sidebar to view detailed analytics and insights

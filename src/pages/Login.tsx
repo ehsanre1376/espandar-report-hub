@@ -62,11 +62,11 @@ const Login = () => {
               <img 
                 src="/favicon.ico" 
                 alt="Espandar Logo" 
-                className="h-12 w-12 object-contain"
+                className="h-28 w-28 object-contain"
               />
               <div className="text-center space-y-1">
                 <CardTitle className="text-2xl font-semibold">
-                  Welcome Back
+                  Welcome to GMRi
                 </CardTitle>
                 <CardDescription className="text-sm">
                   Sign in to continue
@@ -79,12 +79,12 @@ const Login = () => {
             <CardContent className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-sm font-medium">
-                  Email
+                  Username
                 </Label>
                 <Input
                   id="username"
                   type="text"
-                  placeholder="user@espandarco.com"
+                  placeholder="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   onFocus={() => setFocusedField("username")}

@@ -1,0 +1,54 @@
+{
+  "categories": [
+    {
+      "id": "ECIC Total Performance",
+      "name": "ECIC Total Performance",
+      "icon": "BarChart3",
+      "reports": [
+        {
+          "id": "ECIC Performance Report",
+          "name": "ECIC Performance Report",
+          "icon": "FileText",
+          "url": "http://ecic-bi/Reports/powerbi/ECIC%20Total%20Performance/ECIC%20Performance%20Report?rs:embed=true"
+        }
+      ]
+    },
+    {
+      "id": "GMR",
+      "name": "GMR",
+      "icon": "TrendingUp",
+      "reports": [
+        { "id": "EBSC Monthly Report", "name": "EBSC Monthly Report", "icon": "Calendar", "url": "http://ecic-bi/Reports/powerbi/GMR/EBSC%20Monthly%20Report?rs:embed=true" },
+        { "id": "ECIC Monthly Report", "name": "ECIC Monthly Report", "icon": "MapPin", "url": "http://ecic-bi/Reports/powerbi/GMR/ECIC%20Monthly%20Report?rs:embed=true" },
+        { "id": "ETCC Monthly Report", "name": "ETCC Monthly Report", "icon": "TrendingUp", "url": "http://ecic-bi/Reports/powerbi/GMR/ETCC%20Monthly%20Report?rs:embed=true" },
+        { "id": "ETSC Monthly Report", "name": "ETSC Monthly Report", "icon": "Users", "url": "http://ecic-bi/Reports/powerbi/GMR/ETSC%20Monthly%20Report?rs:embed=true" }
+      ]
+    },
+    {
+      "id": "Human Resources",
+      "name": "Human Resources",
+      "icon": "Users",
+      "reports": [
+        { "id": "HR Personnel Report", "name": "HR Personnel Report", "icon": "LayoutDashboard", "url": "http://ecic-bi/Reports/powerbi/Human%20Resources/HR%20Personnel%20Report?rs:embed=true" }
+      ]
+    },
+    {
+      "id": "Procurement",
+      "name": "Procurement",
+      "icon": "Package",
+      "reports": [
+        { "id": "ELCC Purchase Report", "name": "ELCC Purchase Report", "icon": "Boxes", "url": "http://ecic-bi/Reports/powerbi/Procurement/ELCC%20Purchase%20Report?rs:embed=true" }
+      ]
+    },
+    {
+      "id": "Sales",
+      "name": "Sales",
+      "icon": "Package",
+      "reports": [
+        { "id": "IME Sales Report", "name": "IME Sales Report", "icon": "Boxes", "url": "http://ecic-bi/Reports/powerbi/Sales/IME%20Sales%20Report?rs:embed=true" }
+      ]
+    }
+  ]
+}
+
+
