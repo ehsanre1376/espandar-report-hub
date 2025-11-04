@@ -1,11 +1,12 @@
 import * as LucideIcons from "lucide-react";
-import { reportCategories } from "@/types/reports";
+import { ReportCategory } from "@/types/reports";
 
 interface WelcomeScreenProps {
+  categories: ReportCategory[];
   onCategoryClick: (categoryId: string) => void;
 }
 
-export const WelcomeScreen = ({ onCategoryClick }: WelcomeScreenProps) => {
+export const WelcomeScreen = ({ categories, onCategoryClick }: WelcomeScreenProps) => {
   return (
     <div className="flex items-center justify-center h-full bg-gradient-to-br from-background to-muted/30">
       <div className="text-center space-y-8 px-6 max-w-4xl">
@@ -19,7 +20,7 @@ export const WelcomeScreen = ({ onCategoryClick }: WelcomeScreenProps) => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-          {reportCategories.map((category) => {
+          {categories.map((category) => {
             const Icon = (LucideIcons as any)[category.icon] || LucideIcons.BarChart3;
             return (
               <button

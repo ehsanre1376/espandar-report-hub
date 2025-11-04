@@ -1,7 +1,3 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  `${window.location.protocol}//${window.location.hostname}:3000/api`;
-
 export interface CatalogReport {
   id: string;
   name: string;
@@ -22,18 +18,20 @@ export interface ReportCatalogResponse {
 
 export const reportCatalogService = {
   async fetchCatalog(): Promise<CatalogCategory[]> {
-    const response = await fetch(`${API_BASE_URL}/reports/catalog`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to load catalog (${response.status})`);
+    const candidates = ['reports.catalog.json', '/reports.catalog.json'];
+    let lastError: any = null;
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url, { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: ReportCatalogResponse = await res.json();
+        return data.categories || [];
+      } catch (err) {
+        lastError = err;
+        // try next candidate
+      }
     }
-
-    const data: ReportCatalogResponse = await response.json();
-    return data.categories || [];
+    console.error('Failed to load report catalog:', lastError);
+    return [];
   }
 };
-
-

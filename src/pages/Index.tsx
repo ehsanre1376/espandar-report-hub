@@ -6,9 +6,11 @@ import { ReportViewer } from "@/components/ReportViewer";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { CategoryReportsView } from "@/components/CategoryReportsView";
 import { PageTransition } from "@/components/PageTransition";
-import { reportCategories } from "@/types/reports";
+import { reportCatalogService } from "@/services/reportCatalogService";
+import { ReportCategory } from "@/types/reports";
 
 const Index = () => {
+  const [categories, setCategories] = useState<ReportCategory[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [activeReport, setActiveReport] = useState<{
@@ -21,8 +23,16 @@ const Index = () => {
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const lastScrollTop = useRef(0);
 
+  useEffect(() => {
+    let mounted = true;
+    reportCatalogService.fetchCatalog()
+      .then(cats => { if (mounted) setCategories(cats as any); })
+      .catch(() => { if (mounted) setCategories([]); });
+    return () => { mounted = false; };
+  }, []);
+
   const handleReportSelect = (categoryId: string, reportId: string, reportName: string) => {
-    const category = reportCategories.find(c => c.id === categoryId);
+    const category = categories.find(c => c.id === categoryId);
     const report = category?.reports.find(r => r.id === reportId);
     
     if (report) {
@@ -106,8 +116,8 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isFullscreen, activeReport]);
 
-  const currentCategory = reportCategories.find(c => c.id === activeReport?.categoryId || c.id === selectedCategoryId);
-  const selectedCategory = selectedCategoryId ? reportCategories.find(c => c.id === selectedCategoryId) : null;
+  const currentCategory = categories.find(c => c.id === activeReport?.categoryId || c.id === selectedCategoryId);
+  const selectedCategory = selectedCategoryId ? categories.find(c => c.id === selectedCategoryId) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -120,7 +130,7 @@ const Index = () => {
       <div className={`flex w-full transition-all duration-300 ${isFullscreen && !isHeaderVisible ? 'pt-0' : 'pt-16'}`}>
         {!isFullscreen && (
           <Sidebar
-            categories={reportCategories}
+            categories={categories}
             isOpen={isSidebarOpen}
             onReportSelect={handleReportSelect}
             activeReport={activeReport ? {
@@ -168,7 +178,7 @@ const Index = () => {
                   onBack={handleBack}
                 />
               ) : (
-                <WelcomeScreen onCategoryClick={handleCategoryClick} />
+                <WelcomeScreen categories={categories} onCategoryClick={handleCategoryClick} />
               )}
             </PageTransition>
           </div>
