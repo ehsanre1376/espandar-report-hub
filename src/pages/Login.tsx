@@ -140,7 +140,7 @@ const Login = () => {
                 type="submit"
                 className={cn(
                   "w-full h-11 font-medium",
-                  "bg-[hsl(var(--header-background))] hover:bg-[hsl(var(--header-background))]/90 text-white",
+                  "bg-red-700 hover:bg-red-800 text-white",
                   "disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
                 disabled={isLoading || !username || !password}

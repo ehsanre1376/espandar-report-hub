@@ -52,13 +52,10 @@ All colors MUST be HSL.
     --sidebar-ring: 0 0% 90%;
 
     /* Custom tokens for dashboard */
-    /* #9F0000 - Dark Red Header */
-    --header-background: 0 100% 31%;
-    --header-foreground: 0 0% 100%;
+    --header-icon-color: 0 0% 0%;
+    --header-background: 49 100% 43%;
     --nav-hover: 0 0% 85%;
     --nav-active: 49 100% 43%;
-    
-    /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -100,9 +97,9 @@ All colors MUST be HSL.
     --sidebar-border: 0 0% 85%;
     --sidebar-ring: 0 0% 90%;
 
-    /* #9F0000 - Dark Red Header */
-    --header-background: 0 100% 31%;
-    --header-foreground: 0 0% 100%;
+    /* Custom tokens for dashboard */
+    --header-icon-color: 0 0% 100%;
+    --header-background: 49 100% 43%;
     --nav-hover: 0 0% 85%;
     --nav-active: 49 100% 43%;
   }
