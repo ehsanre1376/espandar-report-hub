@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,12 @@ interface SidebarProps {
 
 export const Sidebar = ({ categories, isOpen, onReportSelect, activeReport }: SidebarProps) => {
   const [openCategories, setOpenCategories] = useState<string[]>(["financial"]);
+
+  useEffect(() => {
+    if (activeReport?.categoryId && !openCategories.includes(activeReport.categoryId)) {
+      setOpenCategories(prev => [...prev, activeReport.categoryId]);
+    }
+  }, [activeReport, openCategories]);
 
   return (
     <aside
