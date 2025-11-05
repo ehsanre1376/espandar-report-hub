@@ -1,6 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { ADService } from '../services/adService';
 import { generateToken, verifyToken } from '../services/jwtService';
+import {
+  shouldRequireCaptcha,
+  incrementFailureCount,
+  resetFailureCount,
+  getClientIp,
+} from '../utils/attemptTracker';
+import { verifyCaptchaToken } from '../utils/captchaVerifier';
 
 const router = Router();
 const adService = new ADService();
@@ -14,29 +21,45 @@ router.post('/login', async (req: Request, res: Response) => {
   const logPrefix = `[Auth Route] [${requestId}] [${new Date().toISOString()}]`;
   
   try {
-    const { username, password } = req.body;
+    const { username, password, captchaToken } = req.body;
+    const clientIp = getClientIp(req);
 
     console.log(`${logPrefix} ========================================`);
     console.log(`${logPrefix} Login request received`);
-    console.log(`${logPrefix} IP: ${req.ip || req.socket.remoteAddress}`);
+    console.log(`${logPrefix} IP: ${clientIp}`);
     console.log(`${logPrefix} User-Agent: ${req.get('user-agent') || 'N/A'}`);
 
     // Validate input
     if (!username || !password) {
       console.log(`${logPrefix} ❌ Missing credentials`);
-      console.log(`${logPrefix} Username provided: ${!!username}`);
-      console.log(`${logPrefix} Password provided: ${!!password}`);
       return res.status(400).json({
         success: false,
         error: 'Username and password are required',
       });
     }
 
-    // Log username format (without password for security)
-    const usernameLength = username.length;
-    const hasAtSymbol = username.includes('@');
-    console.log(`${logPrefix} Username length: ${usernameLength}`);
-    console.log(`${logPrefix} Username format: ${hasAtSymbol ? 'userPrincipalName (with @)' : 'sAMAccountName (no @)'}`);
+    // CAPTCHA Verification
+    if (shouldRequireCaptcha(username, clientIp)) {
+      console.log(`${logPrefix} CAPTCHA is required.`);
+      if (!captchaToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'CAPTCHA token is missing.',
+          captchaRequired: true,
+        });
+      }
+      const isCaptchaValid = await verifyCaptchaToken(captchaToken, clientIp);
+      if (!isCaptchaValid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid CAPTCHA. Please try again.',
+          captchaRequired: true,
+        });
+      }
+      console.log(`${logPrefix} CAPTCHA verification successful.`);
+    }
+
+    // Log username format
     console.log(`${logPrefix} Username: "${username}"`);
     console.log(`${logPrefix} Starting authentication...`);
 
@@ -47,24 +70,25 @@ router.post('/login', async (req: Request, res: Response) => {
 
     if (!user) {
       console.log(`${logPrefix} ❌ Authentication FAILED (${authDuration}ms)`);
+      incrementFailureCount(username, clientIp);
+      const captchaRequired = shouldRequireCaptcha(username, clientIp);
       console.log(`${logPrefix} ========================================`);
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials. Please check your username and password.',
+        captchaRequired,
       });
     }
 
     console.log(`${logPrefix} ✅ Authentication SUCCESS (${authDuration}ms)`);
+    resetFailureCount(username, clientIp);
+    
     console.log(`${logPrefix} User authenticated: ${user.username}`);
     console.log(`${logPrefix} Display name: ${user.displayName}`);
     console.log(`${logPrefix} Email: ${user.email}`);
-    console.log(`${logPrefix} Groups: ${user.groups?.length || 0}`);
 
     // Generate JWT token
     const token = generateToken(user);
-
-    // TODO: Add Power BI token generation here
-    // const powerBiToken = await getPowerBiToken(user);
 
     res.json({
       success: true,
@@ -75,7 +99,6 @@ router.post('/login', async (req: Request, res: Response) => {
         email: user.email,
         groups: user.groups || [],
       },
-      // powerBiToken: powerBiToken, // Uncomment when Power BI integration is ready
     });
     
     console.log(`${logPrefix} Response sent successfully`);

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import ReCAPTCHA from "react-google-recaptcha";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,8 +16,11 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaRequired, setCaptchaRequired] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -24,6 +28,10 @@ const Login = () => {
       navigate("/", { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate]);
+
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,16 +41,24 @@ const Login = () => {
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      toast.error("Please complete the CAPTCHA");
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      const success = await login(username, password);
-      if (success) {
+      const result = await login(username, password, captchaToken);
+      if (result.success) {
         toast.success("Login successful!");
         navigate("/");
       } else {
-        const errorMsg = "Invalid credentials. Please try again.";
+        const errorMsg = result.error || "Invalid credentials. Please try again.";
         toast.error(errorMsg);
+        if (result.captchaRequired) {
+          setCaptchaRequired(true);
+        }
       }
     } catch (error: any) {
       const errorMsg = error?.message || "Login failed. Please try again.";
@@ -50,6 +66,11 @@ const Login = () => {
       console.error("Login error:", error);
     } finally {
       setIsLoading(false);
+      // Reset captcha after submission
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+      setCaptchaToken(null);
     }
   };
 
@@ -133,6 +154,16 @@ const Login = () => {
                   </button>
                 </div>
               </div>
+
+              {captchaRequired && (
+                <div className="flex justify-center">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Replace with your site key
+                    onChange={handleCaptchaChange}
+                  />
+                </div>
+              )}
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4 pt-4">
@@ -143,7 +174,7 @@ const Login = () => {
                   "bg-red-700 hover:bg-red-800 text-white",
                   "disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
-                disabled={isLoading || !username || !password}
+                disabled={isLoading || !username || !password || (captchaRequired && !captchaToken)}
               >
                 {isLoading ? (
                   <>

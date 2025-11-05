@@ -1,0 +1,23 @@
+.recaptcha-container {
+  min-height: 78px;  /* Height of reCAPTCHA widget */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 10px 0;
+  background: transparent;
+}
+
+/* Ensure the iframe is visible */
+.recaptcha-container iframe {
+  margin: 0 auto;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Fix any z-index issues */
+.g-recaptcha {
+  position: relative;
+  z-index: 1000;
+}

@@ -21,6 +21,7 @@ interface LoginResponse {
   };
   powerBiToken?: string;
   error?: string;
+  captchaRequired?: boolean;
 }
 
 export const authService = {
@@ -28,7 +29,7 @@ export const authService = {
    * Authenticate user against Active Directory
    * This should call your backend API that validates against AD
    */
-  async login(username: string, password: string): Promise<LoginResponse> {
+  async login(username: string, password: string, captchaToken: string | null): Promise<LoginResponse> {
     // Development mode: Mock authentication
     console.log("Auth Service Debug:", {
       USE_MOCK_AUTH,
@@ -89,20 +90,21 @@ export const authService = {
         body: JSON.stringify({
           username,
           password,
+          captchaToken,
         }),
       });
       
       console.log(`Response status: ${response.status}`);
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: errorData.message || `Authentication failed (${response.status})`,
+          error: data.error || `Authentication failed (${response.status})`,
+          captchaRequired: data.captchaRequired || false,
         };
       }
-
-      const data = await response.json();
       
       return {
         success: true,

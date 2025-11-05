@@ -8,11 +8,17 @@ interface User {
   groups?: string[];
 }
 
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  captchaRequired?: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string, captchaToken: string | null) => Promise<LoginResult>;
   logout: () => Promise<void>;
   token: string | null;
 }
@@ -42,9 +48,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string, captchaToken: string | null): Promise<LoginResult> => {
     try {
-      const response = await authService.login(username, password);
+      const response = await authService.login(username, password, captchaToken);
       
       if (response.success && response.token && response.user) {
         setToken(response.token);
@@ -59,19 +65,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem("powerBiToken", response.powerBiToken);
         }
         
-        return true;
+        return { success: true };
       }
       
-      // Log the error for debugging
-      if (response.error) {
-        console.error("Authentication error:", response.error);
-        throw new Error(response.error);
-      }
-      
-      return false;
-    } catch (error) {
+      return { 
+        success: false, 
+        error: response.error, 
+        captchaRequired: response.captchaRequired 
+      };
+    } catch (error: any) {
       console.error("Login error:", error);
-      throw error; // Re-throw to let Login component handle it
+      return { success: false, error: error.message || "An unknown error occurred." };
     }
   };
 
