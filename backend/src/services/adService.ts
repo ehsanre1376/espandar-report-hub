@@ -276,6 +276,192 @@ export class ADService {
   }
 
   /**
+   * Find user by username in Active Directory (without password authentication)
+   * Used for NTLM SSO where user is already authenticated via Windows
+   * 
+   * @param username - User's username (user@espandarco.com or username)
+   * @returns User information if found, null otherwise
+   */
+  async findUserByUsername(username: string): Promise<ADUser | null> {
+    const startTime = Date.now();
+    const logPrefix = `[LDAP Find User] [${new Date().toISOString()}]`;
+    
+    console.log(`${logPrefix} ========================================`);
+    console.log(`${logPrefix} Searching for user: "${username}"`);
+    console.log(`${logPrefix} LDAP URL: ${ldapConfig.url}`);
+    console.log(`${logPrefix} Base DN: ${ldapConfig.baseDN}`);
+    
+    return new Promise((resolve, reject) => {
+      // Create LDAP client
+      const client = ldap.createClient({
+        url: ldapConfig.url,
+        reconnect: true,
+        timeout: ldapConfig.timeout,
+        connectTimeout: ldapConfig.connectTimeout,
+      });
+
+      // Bind with service account if configured, otherwise anonymous bind
+      const bindDN = ldapConfig.bindDN || '';
+      const bindPassword = ldapConfig.bindPassword || '';
+      
+      const bindCallback = (bindErr: Error | null) => {
+        if (bindErr) {
+          console.error(`${logPrefix} ❌ LDAP bind FAILED`);
+          console.error(`${logPrefix} Error: ${bindErr.message}`);
+          console.log(`${logPrefix} Attempting anonymous bind...`);
+          
+          // Try anonymous bind
+          client.bind('', '', (anonBindErr) => {
+            if (anonBindErr) {
+              console.error(`${logPrefix} ❌ Anonymous bind also FAILED`);
+              console.error(`${logPrefix} Error: ${anonBindErr.message}`);
+              client.unbind();
+              console.log(`${logPrefix} Total duration: ${Date.now() - startTime}ms`);
+              console.log(`${logPrefix} ========================================`);
+              resolve(null);
+              return;
+            }
+            
+            console.log(`${logPrefix} ✅ Anonymous bind SUCCESS`);
+            this.searchUser(client, username, startTime, logPrefix, resolve);
+          });
+          return;
+        }
+        
+        console.log(`${logPrefix} ✅ LDAP bind SUCCESS (service account)`);
+        this.searchUser(client, username, startTime, logPrefix, resolve);
+      };
+
+      if (bindDN && bindPassword) {
+        // Bind with service account
+        client.bind(bindDN, bindPassword, bindCallback);
+      } else {
+        // Try anonymous bind
+        client.bind('', '', bindCallback);
+      }
+
+      // Handle connection errors
+      client.on('error', (err) => {
+        console.error(`${logPrefix} ❌ LDAP connection error:`);
+        console.error(`${logPrefix} Error type: ${err.name}`);
+        console.error(`${logPrefix} Error message: ${err.message}`);
+        client.unbind();
+        reject(err);
+      });
+    });
+  }
+
+  /**
+   * Search for user in AD
+   */
+  private searchUser(
+    client: ldap.Client,
+    username: string,
+    startTime: number,
+    logPrefix: string,
+    resolve: (value: ADUser | null) => void
+  ): void {
+    const searchDN = ldapConfig.baseDN;
+    const usernamePart = username.split('@')[0];
+    const filter = `(&(objectClass=user)(sAMAccountName=${usernamePart}))`;
+    
+    console.log(`${logPrefix} Search filter: "${filter}"`);
+
+    // Construct domain from baseDN for email fallback
+    const domain = ldapConfig.baseDN
+      .split(',')
+      .filter(part => part.startsWith('dc='))
+      .map(part => part.replace('dc=', ''))
+      .join('.');
+    
+    const opts: ldap.SearchOptions = {
+      filter,
+      scope: 'sub',
+      attributes: ['displayName', 'mail', 'memberOf', 'userPrincipalName', 'sAMAccountName', 'cn'],
+      sizeLimit: 1,
+    };
+
+    let userFound = false;
+
+    client.search(searchDN, opts, (searchErr, res) => {
+      if (searchErr) {
+        console.error(`${logPrefix} ❌ LDAP search ERROR`);
+        console.error(`${logPrefix} Error: ${searchErr.message}`);
+        client.unbind();
+        console.log(`${logPrefix} Total duration: ${Date.now() - startTime}ms`);
+        console.log(`${logPrefix} ========================================`);
+        resolve(null);
+        return;
+      }
+
+      res.on('searchEntry', (entry) => {
+        userFound = true;
+        const entryTime = Date.now() - startTime;
+        console.log(`${logPrefix} ✅ User found (${entryTime}ms)`);
+        
+        try {
+          const attrs = entry.pojo.attributes;
+          
+          const displayName = this.getAttribute(attrs, 'displayName') || 
+                            this.getAttribute(attrs, 'cn') || 
+                            usernamePart;
+          
+          const email = this.getAttribute(attrs, 'mail') || 
+                       this.getAttribute(attrs, 'userPrincipalName') || 
+                       (username.includes('@') ? username : `${username}@${domain}`);
+          
+          const memberOf = this.getAttribute(attrs, 'memberOf', true) || [];
+          const groups = memberOf.map((group: string) => {
+            const match = group.match(/CN=([^,]+)/);
+            return match ? match[1] : '';
+          }).filter((g: string) => g && !g.startsWith('Domain Users'));
+
+          const userInfo: ADUser = {
+            username: email.includes('@') ? email : username,
+            displayName,
+            email,
+            groups: groups as string[],
+          };
+          
+          console.log(`${logPrefix} User details:`, {
+            username: userInfo.username,
+            displayName: userInfo.displayName,
+            email: userInfo.email,
+            groupsCount: userInfo.groups?.length || 0
+          });
+          
+          client.unbind();
+          console.log(`${logPrefix} Total duration: ${Date.now() - startTime}ms`);
+          console.log(`${logPrefix} ========================================`);
+          resolve(userInfo);
+        } catch (error) {
+          console.error(`${logPrefix} ❌ Error parsing LDAP entry:`, error);
+          client.unbind();
+          resolve(null);
+        }
+      });
+
+      res.on('error', (err) => {
+        console.error(`${logPrefix} ❌ LDAP search result error: ${err.message}`);
+        if (!userFound) {
+          client.unbind();
+          resolve(null);
+        }
+      });
+
+      res.on('end', () => {
+        if (!userFound) {
+          console.log(`${logPrefix} ⚠️  User not found`);
+          client.unbind();
+          console.log(`${logPrefix} Total duration: ${Date.now() - startTime}ms`);
+          console.log(`${logPrefix} ========================================`);
+          resolve(null);
+        }
+      });
+    });
+  }
+
+  /**
    * Helper to get attribute value from LDAP entry
    */
   private getAttribute(attrs: any[], name: string, multiple: boolean = false): any {

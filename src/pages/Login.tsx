@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Eye, EyeOff, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -14,11 +15,12 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSsoLoading, setIsSsoLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [captchaRequired, setCaptchaRequired] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { login, loginNtlmSso, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
@@ -74,6 +76,27 @@ const Login = () => {
     }
   };
 
+  const handleNtlmSsoLogin = async () => {
+    setIsSsoLoading(true);
+    toast.info("Attempting automatic Windows authentication...");
+    try {
+      const result = await loginNtlmSso();
+      if (result.success) {
+        toast.success("Windows authentication successful!");
+        navigate("/");
+      } else {
+        const errorMsg = result.error || "Windows authentication failed. Please ensure you are on a domain-joined computer.";
+        toast.error(errorMsg);
+      }
+    } catch (error: any) {
+      const errorMsg = error?.message || "An unexpected error occurred during Windows authentication.";
+      toast.error(errorMsg);
+      console.error("NTLM SSO Login error:", error);
+    } finally {
+      setIsSsoLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-md animate-fade-in">
@@ -114,7 +137,7 @@ const Login = () => {
                     "h-11 transition-colors",
                     focusedField === "username" && "border-[hsl(var(--header-background))]"
                   )}
-                  disabled={isLoading}
+                  disabled={isLoading || isSsoLoading}
                   autoComplete="username"
                 />
               </div>
@@ -136,7 +159,7 @@ const Login = () => {
                       "h-11 pr-10 transition-colors",
                       focusedField === "password" && "border-[hsl(var(--header-background))]"
                     )}
-                    disabled={isLoading}
+                    disabled={isLoading || isSsoLoading}
                     autoComplete="current-password"
                   />
                   <button
@@ -174,7 +197,7 @@ const Login = () => {
                   "bg-red-700 hover:bg-red-800 text-white",
                   "disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
-                disabled={isLoading || !username || !password || (captchaRequired && !captchaToken)}
+                disabled={isLoading || isSsoLoading || !username || !password || (captchaRequired && !captchaToken)}
               >
                 {isLoading ? (
                   <>
@@ -183,6 +206,36 @@ const Login = () => {
                   </>
                 ) : (
                   "Sign In"
+                )}
+              </Button>
+
+              <div className="w-full flex items-center gap-3">
+                <Separator className="flex-1" />
+                <span className="text-xs text-muted-foreground">OR</span>
+                <Separator className="flex-1" />
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleNtlmSsoLogin}
+                variant="outline"
+                className={cn(
+                  "w-full h-11 font-medium",
+                  "border-2 border-primary/20 hover:border-primary/40",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+                disabled={isLoading || isSsoLoading}
+              >
+                {isSsoLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  <>
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Login with Windows (SSO)
+                  </>
                 )}
               </Button>
             </CardFooter>

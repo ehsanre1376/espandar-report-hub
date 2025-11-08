@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
+import ntlmAuthRoutes from './routes/auth.ntlm';
 
 // Load environment variables
 dotenv.config();
@@ -30,7 +31,8 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'WWW-Authenticate', 'X-Requested-With'],
+  exposedHeaders: ['WWW-Authenticate'],
 }));
 
 app.use(express.json());
@@ -57,6 +59,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', ntlmAuthRoutes); // Add NTLM authentication routes
 
 // 404 handler
 app.use((req, res) => {
@@ -83,6 +86,7 @@ app.listen(PORT, () => {
   console.log(`📋 LDAP Base DN: ${process.env.LDAP_BASE_DN || 'Not configured'}`);
   console.log('═══════════════════════════════════════════════════');
   console.log('✅ Ready to accept authentication requests!');
+  console.log('✅ NTLM authentication enabled');
   console.log('═══════════════════════════════════════════════════');
 });
 

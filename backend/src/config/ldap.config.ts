@@ -25,5 +25,11 @@ export const ldapConfig = {
   // Timeout settings
   timeout: parseInt(process.env.LDAP_TIMEOUT || '5000', 10),
   connectTimeout: parseInt(process.env.LDAP_CONNECT_TIMEOUT || '5000', 10),
+
+  // NTLM Configuration (for automatic Windows authentication)
+  // Domain name (without .com extension)
+  ntlmDomain: process.env.NTLM_DOMAIN || 'espandarco',
+  // Domain controller hostname (extracted from LDAP_URL or specified separately)
+  domainController: process.env.NTLM_DOMAIN_CONTROLLER || process.env.LDAP_URL || 'ldap://DC1.espandarco.com:389',
 };
 

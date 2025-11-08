@@ -19,6 +19,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string, captchaToken: string | null) => Promise<LoginResult>;
+  loginNtlm: (username: string, password: string, captchaToken: string | null) => Promise<LoginResult>;
+  loginNtlmSso: () => Promise<LoginResult>;
   logout: () => Promise<void>;
   token: string | null;
 }
@@ -79,6 +81,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const loginNtlm = async (username: string, password: string, captchaToken: string | null): Promise<LoginResult> => {
+    try {
+      const response = await authService.loginNtlm(username, password, captchaToken);
+      
+      if (response.success && response.token && response.user) {
+        setToken(response.token);
+        setUser(response.user);
+        
+        // Store in localStorage
+        localStorage.setItem("authToken", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+        
+        // Store Power BI authentication token if provided
+        if (response.powerBiToken) {
+          localStorage.setItem("powerBiToken", response.powerBiToken);
+        }
+        
+        return { success: true };
+      }
+      
+      return { 
+        success: false, 
+        error: response.error, 
+        captchaRequired: response.captchaRequired 
+      };
+    } catch (error: any) {
+      console.error("NTLM Login error:", error);
+      return { success: false, error: error.message || "An unknown error occurred." };
+    }
+  };
+
+  const loginNtlmSso = async (): Promise<LoginResult> => {
+    try {
+      const response = await authService.loginNtlmSso();
+      
+      if (response.success && response.token && response.user) {
+        setToken(response.token);
+        setUser(response.user);
+        
+        // Store in localStorage
+        localStorage.setItem("authToken", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+        
+        // Store Power BI authentication token if provided
+        if (response.powerBiToken) {
+          localStorage.setItem("powerBiToken", response.powerBiToken);
+        }
+        
+        return { success: true };
+      }
+      
+      return { 
+        success: false, 
+        error: response.error
+      };
+    } catch (error: any) {
+      console.error("NTLM SSO Login error:", error);
+      return { success: false, error: error.message || "An unknown error occurred." };
+    }
+  };
+
   const logout = async (): Promise<void> => {
     try {
       await authService.logout();
@@ -100,6 +163,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!user && !!token,
         isLoading,
         login,
+        loginNtlm,
+        loginNtlmSso,
         logout,
         token,
       }}
