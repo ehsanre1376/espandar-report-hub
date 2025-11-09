@@ -1,3 +1,4 @@
+/// <reference path="../types/express-session.d.ts" />
 
 import express from 'express';
 import svgCaptcha from 'svg-captcha';

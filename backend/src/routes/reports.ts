@@ -13,11 +13,11 @@ const router = Router();
  * Make a HEAD request to check if a URL is accessible
  */
 const checkUrlAccess = (urlString: string, timeout: number = 5000): Promise<{ status: number; accessible: boolean }> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     try {
       const url = new URL(urlString);
       const httpModule = url.protocol === 'https:' ? https : http;
-      
+
       const options = {
         method: 'HEAD',
         hostname: url.hostname,
@@ -26,31 +26,36 @@ const checkUrlAccess = (urlString: string, timeout: number = 5000): Promise<{ st
         headers: {
           'User-Agent': 'Espandar-Report-Hub/1.0',
         },
+        // Allow self-signed certificates (use with caution)
+        rejectUnauthorized: false,
       };
 
       const req = httpModule.request(options, (res) => {
-        // Status 200, 401 (requires auth), or 403 (forbidden) means the report exists
-        // Status 404 means report doesn't exist
-        const accessible = res.statusCode === 200 || res.statusCode === 401;
+        // We consider any response from the server as accessible
+        // This includes 2xx, 3xx, 4xx, and 5xx status codes
+        const accessible = res.statusCode !== undefined && res.statusCode > 0;
+        
         resolve({ status: res.statusCode || 0, accessible });
+        
+        // Destroy the socket to close the connection immediately
         res.destroy();
       });
 
       req.on('error', (error) => {
-        // Network errors or connection failures
-        console.error('Error checking URL access:', error);
-        resolve({ status: 0, accessible: true }); // Default to accessible for graceful degradation
+        console.error(`Error checking URL access for ${urlString}:`, error.message);
+        // If there's an error (e.g., DNS lookup failure, connection refused), the URL is not accessible
+        resolve({ status: 0, accessible: false });
       });
 
       req.setTimeout(timeout, () => {
-        req.destroy();
-        resolve({ status: 0, accessible: true }); // Default to accessible for graceful degradation
+        req.destroy(new Error(`Request timed out after ${timeout}ms`));
       });
 
       req.end();
-    } catch (error) {
-      console.error('Error parsing URL:', error);
-      resolve({ status: 0, accessible: true }); // Default to accessible for graceful degradation
+    } catch (error: any) {
+      console.error(`Error parsing URL ${urlString}:`, error.message);
+      // If the URL is invalid, it's not accessible
+      resolve({ status: 0, accessible: false });
     }
   });
 };

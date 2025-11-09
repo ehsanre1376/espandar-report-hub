@@ -164,12 +164,12 @@ export class ADService {
           const attrs = entry.pojo.attributes as LDAPAttribute[];
           console.log(`${logPrefix} Available attributes:`, attrs.map(a => a.type).join(', '));
           
-          const displayName = this.getAttribute(attrs, 'displayName') || 
-                            this.getAttribute(attrs, 'cn') || 
+          const displayName = (this.getAttribute(attrs, 'displayName') as string) || 
+                            (this.getAttribute(attrs, 'cn') as string) || 
                             usernamePart;
           
-          const email = this.getAttribute(attrs, 'mail') || 
-                       this.getAttribute(attrs, 'userPrincipalName') || 
+          const email = (this.getAttribute(attrs, 'mail') as string) || 
+                       (this.getAttribute(attrs, 'userPrincipalName') as string) || 
                        userDN;
           
           const userInfo = {
